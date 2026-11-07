@@ -1,0 +1,10 @@
+{
+  "name": "noreset-contracts",
+  "private": true,
+  "scripts": {
+    "check:contracts": "tsc --project tsconfig.contracts.json"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
