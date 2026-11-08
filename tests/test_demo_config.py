@@ -290,7 +290,13 @@ def test_online_missing_config_fails_and_offline_is_explicit(tmp_path, monkeypat
     assert "离线 Mock" in capsys.readouterr().out
 
 
-def test_offline_entry_serves_same_origin_ui_and_accepts_write(tmp_path):
+def test_offline_entry_serves_same_origin_ui_and_accepts_write(tmp_path, monkeypatch):
+    # Loopback acceptance must stay local even when the OS advertises a proxy.
+    # Keep this bypass scoped to this test's client; model traffic is unaffected.
+    monkeypatch.setattr(urllib.request, "getproxies", lambda: {
+        "http": "http://127.0.0.1:1", "https": "http://127.0.0.1:1",
+    })
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -308,7 +314,7 @@ def test_offline_entry_serves_same_origin_ui_and_accepts_write(tmp_path):
         while time.monotonic() < deadline:
             assert process.poll() is None, "offline demo exited before startup"
             try:
-                with urllib.request.urlopen(base + "/health", timeout=1) as response:
+                with opener.open(base + "/health", timeout=1) as response:
                     health = json.load(response)
                 break
             except (OSError, urllib.error.URLError):
@@ -316,12 +322,12 @@ def test_offline_entry_serves_same_origin_ui_and_accepts_write(tmp_path):
         else:
             pytest.fail("offline demo did not start")
         assert health["provider"] == "mock"
-        with urllib.request.urlopen(base + "/", timeout=2) as response:
+        with opener.open(base + "/", timeout=2) as response:
             assert "<title>NoReset·内测版｜陪你记下来</title>" in response.read().decode()
-        with urllib.request.urlopen(base + "/api/media/capabilities", timeout=2) as response:
+        with opener.open(base + "/api/media/capabilities", timeout=2) as response:
             assert json.load(response)["capabilities"]["enabled"] is True
         request = urllib.request.Request(base + "/api/events", data=json.dumps({"raw_text": "演示启动测试", "source_kind": "elder", "actor_name": "测试"}).encode(), headers={"Content-Type": "application/json", "Origin": base, "X-Session-Token": health["session_token"], "Idempotency-Key": "same-origin-demo-test"})
-        with urllib.request.urlopen(request, timeout=2) as response:
+        with opener.open(request, timeout=2) as response:
             assert response.status == 201
             assert json.load(response)["event"]["raw_text"] == "演示启动测试"
     finally:

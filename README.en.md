@@ -87,6 +87,14 @@ Deletion opens a clear confirmation dialog. Confirming removes the selected loca
 
 This repository provides source for a locally hosted application. Install **Python 3.12**. Live conversation, speech recognition and image recognition require API credentials; providers charge according to usage.
 
+| Feature | External API required? |
+| --- | --- |
+| Encrypted vault, text and original media storage, unlocking, backup and restore | No; install dependencies and start the local services |
+| AI conversation and organization | Yes, a configured text model provider |
+| Speech transcription and image text recognition | Yes, configured ASR and OCR providers |
+
+Without provider configuration, AI and recognition requests report a configuration error; saved originals remain accessible. For local storage without AI, run `python -m scripts.start_dev` directly; a complete online configuration check is not required.
+
 ```bash
 git clone https://github.com/gundamgungungun/NoReset.git
 cd NoReset
@@ -115,6 +123,8 @@ python -m scripts.start_dev
 Open **[http://127.0.0.1:5173/](http://127.0.0.1:5173/)**. The default backend port is `18768`. Recording requires browser microphone permission; remote microphone access requires a secure connection.
 
 See [model connection instructions](docs/MODEL-CONNECTION.md) for configuration. Never commit `.env` or API keys.
+
+If a system proxy forwards loopback requests, add `localhost`, `127.0.0.1` and `::1` to its bypass list. The offline startup acceptance test uses its own direct client without changing proxy settings for real model requests.
 
 ## Data and privacy
 
